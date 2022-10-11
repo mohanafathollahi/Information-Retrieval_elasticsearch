@@ -23,6 +23,7 @@ from elasticsearch.helpers import scan
 from elasticsearch.exceptions import NotFoundError, TransportError
 
 import argparse
+import json
 
 __author__ = 'bejar'
 
@@ -30,6 +31,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--index', default=None, required=True, help='Index to search')
     parser.add_argument('--alpha', action='store_true', default=False, help='Sort words alphabetically')
+    parser.add_argument('--save', action='store_true', default=False, help='Save result as list')
     args = parser.parse_args()
 
     index = args.index
@@ -37,7 +39,7 @@ if __name__ == '__main__':
     try:
         client = Elasticsearch(timeout=1000)
         voc = {}
-        sc = scan(client, index=index, query={"query" : {"match_all": {}}})
+        sc = scan(client, index=index, query={"query": {"match_all": {}}})
         for s in sc:
             try:
                 tv = client.termvectors(index=index, id=s['_id'], fields=['text'])
@@ -59,5 +61,13 @@ if __name__ == '__main__':
             print(f'{cnt}, {pal.decode("utf-8")}')
         print('--------------------')
         print(f'{len(lpal)} Words')
+
+        if args.save:
+            lpal = [(term.decode("utf-8"), freq) for term, freq in lpal]
+            path = f"./{args.index}.json"
+            with open(path, "w") as f:
+                json.dump(lpal, f)
+            print(f"Counts saved at {path}")
+
     except NotFoundError:
         print(f'Index {index} does not exists')

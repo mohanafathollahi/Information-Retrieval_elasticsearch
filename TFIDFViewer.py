@@ -18,15 +18,14 @@ TFIDFViewer
 :Date:  05/07/2017
 """
 
-from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import NotFoundError
-from elasticsearch.client import CatClient
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.query import Q
-
 import argparse
 
 import numpy as np
+from elasticsearch import Elasticsearch
+from elasticsearch.client import CatClient
+from elasticsearch.exceptions import NotFoundError
+from elasticsearch_dsl import Search
+from elasticsearch_dsl.query import Q
 
 __author__ = 'bejar'
 
@@ -42,7 +41,6 @@ def search_file_by_path(client, index, path):
     q = Q('match', path=path)  # exact search in the path field
     s = s.query(q)
     result = s.execute()
-
     lfiles = [r for r in result]
     if len(lfiles) == 0:
         raise NameError(f'File [{path}] not found')
@@ -91,16 +89,15 @@ def toTFIDF(client, index, file_id):
     dcount = doc_count(client, index)
 
     tfidfw = []
-    for (t, fd),(_, df) in zip(file_tv, file_df):
-        #1) compute tf(d,i). Use f(d,i) = file_td[t] = fd and max = max_freq
+    for (t, fd), (_, df) in zip(file_tv, file_df):
+        ### Own implementation
+        # 1) compute tf(d,i). Use f(d,i) = file_td[t] = fd and max = max_freq
         tf = fd / max_freq
 
-        #2) compute idf(i). log2(D/df(i)). D=dcount. df(i) = file_df[t]=df)
+        # 2) compute idf(i). log2(D/df(i)). D=dcount. df(i) = file_df[t]=df)
         idf = np.log2(dcount / df)
-
         w = tf * idf
         tfidfw.append((t, w))
-
     return normalize(tfidfw)
 
 
@@ -110,7 +107,8 @@ def print_term_weight_vector(twv):
     :param twv:
     :return:
     """
-    for t,v in twv:
+    ### Own implementation
+    for t, v in twv:
         print(f'({t}, {v:3.5f})')
 
 
@@ -121,6 +119,7 @@ def normalize(tw):
     :param tw:
     :return:
     """
+    ### Own implementation
     # Allocate terms in a tuple, and weights in another
     # vt: vector of terms
     # vw: vector of weights
@@ -128,10 +127,9 @@ def normalize(tw):
 
     # Convert the zip iterator in a numpy array
     vw = np.array(vw)
-
     # Normalize the vector of weights
     # nvw: normalized vector of weights
-    nvw = vw / np.sqrt(np.sum(vw**2))
+    nvw = vw / np.sqrt(np.sum(vw ** 2))
 
     # Return the tuples back together in the form of the original vector
     return list(zip(vt, nvw))
@@ -144,27 +142,24 @@ def cosine_similarity(tw1, tw2):
     :param tw2:
     :return:
     """
+    ### Own implementation
     # We initialize the lists containing the indexes of the vectors
-    L = 0
-    L1 = 0
-    L2 = 0
+    l, l1, l2 = 0, 0, 0
     # Iterate over each tuple in the list
-    while (L1 < len(tw1) and L2 < len(tw2)):
-        # If the term 1 is on a lower alphabetical order than term 2
-        # advance in one index of vector 1
-        if (tw1[L1][0] < tw2[L2][0]):
-            L1 += 1
-        # If the term 1 is on a higher alphabetical order than term 2
-        # advance in one index of vector 2
-        elif (tw1[L1][0] > tw2[L2][0]):
-            L2 += 1
-        # When the terms are equal, perform the scalar product and then advance both indices
+    while l1 < len(tw1) and l2 < len(tw2):
+        # If the term 1 is on a lower alphabetical order than increase index of vector 1
+        if tw1[l1][0] < tw2[l2][0]:
+            l1 += 1
+        # If the term 1 is on a higher alphabetical order than increase index of vector 2
+        elif tw1[l1][0] > tw2[l2][0]:
+            l2 += 1
+        # When the terms are equal, perform the scalar product and then increase both indices
         else:
-            L += tw1[L1][1] * tw2[L2][1]
-            L1 += 1
-            L2 += 1
+            l += tw1[l1][1] * tw2[l2][1]
+            l1 += 1
+            l2 += 1
 
-    return L
+    return l
 
 
 def doc_count(client, index):
@@ -185,16 +180,13 @@ if __name__ == '__main__':
     parser.add_argument('--print', default=False, action='store_true', help='Print TFIDF vectors')
 
     args = parser.parse_args()
-
     index = args.index
-
     file1 = args.files[0]
     file2 = args.files[1]
 
+    # client = Elasticsearch(timeout=1000,use_ssl=True,ssl_context=context, scheme = "https",http_auth = ("elastic", "h_9RfOqHmS-v5-ZV9Lk7"))
     client = Elasticsearch(timeout=1000)
-
     try:
-
         # Get the files ids
         file1_id = search_file_by_path(client, index, file1)
         file2_id = search_file_by_path(client, index, file2)
@@ -206,10 +198,10 @@ if __name__ == '__main__':
         if args.print:
             print(f'TFIDF FILE {file1}')
             print_term_weight_vector(file1_tw)
-            print ('---------------------')
+            print('---------------------')
             print(f'TFIDF FILE {file2}')
             print_term_weight_vector(file2_tw)
-            print ('---------------------')
+            print('---------------------')
 
         print(f"Similarity = {cosine_similarity(file1_tw, file2_tw):3.5f}")
 
