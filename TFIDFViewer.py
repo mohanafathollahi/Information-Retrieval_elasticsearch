@@ -1,23 +1,3 @@
-"""
-.. module:: TFIDFViewer
-
-TFIDFViewer
-******
-
-:Description: TFIDFViewer
-
-    Receives two paths of files to compare (the paths have to be the ones used when indexing the files)
-
-:Authors:
-    bejar
-    bertille
-    miguel
-
-:Version: 
-
-:Date:  05/07/2017
-"""
-
 import argparse
 
 import numpy as np
@@ -26,8 +6,6 @@ from elasticsearch.client import CatClient
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import Q
-
-__author__ = 'bejar'
 
 
 def search_file_by_path(client, index, path):
